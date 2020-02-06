@@ -1,0 +1,12 @@
+---
+title: "Raster data downloads and calculations"
+author: "Natalie Love"
+date: "2/6/2020"
+output: html_document
+---
+
+##Load packages
+```{r}
+library(prism)
+```
+
