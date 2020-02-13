@@ -7,6 +7,159 @@ output: html_document
 
 ##Load packages
 ```{r}
-library(prism)
+library(tidyverse)
+library(raster)
+library(rgdal)
+library(sf)
+```
+
+##Load data
+```{r}
+##Load data
+nemodata <- read_csv("nemo_occurrences.csv", col_types = cols(
+  id = col_double(),
+  institutionCode = col_character(),
+  collectionCode = col_character(),
+  collectionID = col_character(),
+  basisOfRecord = col_character(),
+  ownerInstitutionCode = col_character(),
+  basisOfRecord = col_character(),
+  occurrenceID = col_character(),
+  catalogNumber = col_character(),
+  otherCatalogNumbers = col_character(),
+  kingdom = col_character(),
+  phylum = col_character(),
+  class = col_character(),
+  order = col_character(),
+  family = col_character(),
+  scientificName = col_character(),
+  taxonID = col_double(),
+  scientificNameAuthorship = col_character(),
+  genus = col_character(),
+  specificEpithet = col_character(),
+  taxonRank = col_character(),
+  infraspecificEpithet = col_character(),
+  identifiedBy = col_character(),
+  dateIdentified = col_character(),
+  identificationReferences = col_character(),
+  identificationRemarks = col_character(),
+  taxonRemarks = col_character(),
+  identificationQualifier = col_character(),
+  typeStatus = col_character(),
+  recordedBy = col_character(),
+  recordNumber = col_character(),
+  eventDate = col_character(),
+  year = col_double(),
+  month = col_double(),
+  day = col_double(),
+  startDayOfYear = col_double(),
+  endDayOfYear = col_double(),
+  verbatimEventDate = col_character(),
+  occurrenceRemarks = col_character(),
+  habitat = col_character(),
+  fieldNumber = col_character(),
+  informationWithheld = col_character(),
+  dataGeneralizations = col_character(),
+  dynamicProperties = col_character(),
+  associatedTaxa = col_character(),
+  reproductiveCondition = col_character(),
+  establishmentMeans = col_character(),
+  lifeStage = col_character(),
+  sex = col_character(),
+  individualCount = col_double(),
+  preparations = col_character(),
+  country = col_character(),
+  stateProvince = col_character(),
+  county = col_character(),
+  municipality = col_character(),
+  locality = col_character(),
+  locationRemarks = col_character(),
+  decimalLatitude = col_double(),
+  decimalLongitude = col_double(),
+  geodeticDatum = col_character(),
+  coordinateUncertaintyInMeters = col_double(),
+  verbatimCoordinates = col_character(),
+  georeferencedBy = col_character(),
+  georeferenceProtocol = col_character(),
+  georeferenceSources = col_character(),
+  georeferenceVerificationStatus = col_character(),
+  georeferenceRemarks = col_character(),
+  minimumElevationInMeters = col_double(),
+  maximumElevationInMeters = col_double(),
+  minimumDepthInMeters = col_double(),
+  maximumDepthInMeters = col_double(),
+  verbatimDepth = col_character(),
+  verbatimElevation = col_character(),
+  disposition = col_character(),
+  language = col_character(),
+  recordEnteredBy = col_character(),
+  modified = col_character(),
+  rights = col_character(),
+  rightsHolder = col_character(),
+  accessRights = col_character(),
+  recordId = col_character(),
+  references = col_character()
+))
+View(nemodata)
+```
+
+##Load cliamte data reference sheets
+These will be used to tell R which climate rasters to average or add together to calculate seasonal variables
+```{r}
+winterppt_vars <- read_csv("winterppt_vars.csv")
+springtmean_vars <- read_csv("springtmean_vars.csv")
+```
+
+
+
+##Function to create sums or averages
+```{r}
+winter_sum <- function(x,y,z){
+  return(x + y + z)
+}
+
+spring_mean <- function(x,y,z){
+  return((x + y + z)/3)
+}
+```
+
+##set path
+Path for output files
+```{r}
+path_ppt = "prism_seasonal/ppt/"
+path_tmean ="prism_seasonal/tmean/"
+```
+
+##Loop to calculate winter PPT for each year
+```{r}
+for (i in 1896:2018){
+  var1 <- raster(winterppt_vars$var1[which(winterppt_vars$name == i)])
+  var2 <-raster(winterppt_vars$var2[which(winterppt_vars$name == i)])
+  var3 <-raster(winterppt_vars$var3[which(winterppt_vars$name == i)])
+  ppt_raster <- overlay(var1, var2, var3, fun = winter_sum)
+  writeRaster(x = ppt_raster , filename = file.path(path_ppt, paste0("winterppt_",i)))
+}
+```
+
+##Loop to calculate spring Tmean for each year
+```{r}
+for (i in 1896:2018){
+  var1 <- raster(springtmean_vars$var1[which(springtmean_vars$name == i)])
+  var2 <-raster(springtmean_vars$var2[which(springtmean_vars$name == i)])
+  var3 <-raster(springtmean_vars$var3[which(springtmean_vars$name == i)])
+  tmean_raster <- overlay(var1, var2, var3, fun = spring_mean)
+  writeRaster(x = tmean_raster, filename = file.path(path_tmean, paste0("springtmean_",i)))
+}
+```
+
+
+#Bring in raster, test again
+Get point specific values to compare to PRISM explorer data
+```{r}
+tmean2013_test <- raster("prism_seasonal/tmean/springtmean_2013")
+
+nemotmean <- enframe(x = raster::extract(tmean2013_test, nemodata[,c("decimalLongitude","decimalLatitude")]), value = "springtmean_2013", name = NULL)
+nemotmean
+
 ```
 
