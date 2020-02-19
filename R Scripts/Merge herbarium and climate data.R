@@ -212,8 +212,163 @@ for(i in 1:nrow(dat_pheno)){
 
 }
 
-View(dat_pheno[,c("year","startDayOfYear",var_seasonal, "ppt_annual","tmin_annual","tmean_annual","tmax_annual",
-                  "ppt_MOC","tmin_MOC","tmean_MOC","tmax_MOC")])
+
+# Format seasonal variables as "var"_"season"
+colnames(dat_pheno)[which(colnames(dat_pheno) %in% var_seasonal)] <- 
+  c("ppt_wt","tmin_wt","tmean_wt","tmax_wt","ppt_sp","tmin_sp","tmean_sp","tmax_sp")
 
 
+
+
+
+
+
+
+#  
+# MERGE NORMALS
+# 
+
+#
+# Annual/seasonal
+#
+
+
+for(i in 1:nrow(dat_pheno)){
+  
+  #
+  # Annual
+  #
+  
+  ppt_normal_annual <- raster(paste(getwd(),"/Data/prism_data/normals/ppt/ppt_normal_annual",sep = ""))
+  tmin_normal_annual <- raster(paste(getwd(),"/Data/prism_data/normals/tmin/tmin_normal_annual",sep = ""))
+  tmean_normal_annual <- raster(paste(getwd(),"/Data/prism_data/normals/tmean/tmean_normal_annual",sep = ""))
+  tmax_normal_annual <- raster(paste(getwd(),"/Data/prism_data/normals/tmax/tmax_normal_annual",sep = ""))
+  
+  dat_pheno[i,"ppt_norm_annual"] <- extract(x=ppt_normal_annual, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmin_norm_annual"] <- extract(x=tmin_normal_annual, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmean_norm_annual"] <- extract(x=tmean_normal_annual, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmax_norm_annual"] <- extract(x=tmax_normal_annual, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  
+  #
+  # Seasonal
+  #
+  
+  # winter
+  ppt_normal_wt <- raster(paste(getwd(),"/Data/prism_data/normals/ppt/winterppt_normal_seasonal",sep = ""))
+  tmin_normal_wt <- raster(paste(getwd(),"/Data/prism_data/normals/tmin/wintertmin_normal_seasonal",sep = ""))
+  tmean_normal_wt <- raster(paste(getwd(),"/Data/prism_data/normals/tmean/wintertmean_normal_seasonal",sep = ""))
+  tmax_normal_wt <- raster(paste(getwd(),"/Data/prism_data/normals/tmax/wintertmax_normal_seasonal",sep = ""))
+  
+  dat_pheno[i,"ppt_norm_wt"] <- extract(x=ppt_normal_wt, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmin_norm_wt"] <- extract(x=tmin_normal_wt, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmean_norm_wt"] <- extract(x=tmean_normal_wt, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmax_norm_wt"] <- extract(x=tmax_normal_wt, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  
+  
+  # Spring
+  ppt_normal_sp <- raster(paste(getwd(),"/Data/prism_data/normals/ppt/springppt_normal_seasonal",sep = ""))
+  tmin_normal_sp <- raster(paste(getwd(),"/Data/prism_data/normals/tmin/springtmin_normal_seasonal",sep = ""))
+  tmean_normal_sp <- raster(paste(getwd(),"/Data/prism_data/normals/tmean/springtmean_normal_seasonal",sep = ""))
+  tmax_normal_sp <- raster(paste(getwd(),"/Data/prism_data/normals/tmax/springtmax_normal_seasonal",sep = ""))
+  
+  dat_pheno[i,"ppt_norm_sp"] <- extract(x=ppt_normal_sp, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmin_norm_sp"] <- extract(x=tmin_normal_sp, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmean_norm_sp"] <- extract(x=tmean_normal_sp, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  dat_pheno[i,"tmax_norm_sp"] <- extract(x=tmax_normal_sp, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  
+  }
+  
+  
+#
+# Month of Collection (MOC)  
+#
+
+vars <- c("ppt","tmin","tmean","tmax")
+
+for(var in vars){
+  
+  raster_list <- data.frame(matrix(NA, nrow=12, ncol=3))
+  raster_list[,1] <- c("01","02","03","04","05","06","07","08","09","10","11","12")
+  raster_list[,2] <- paste(getwd(),"/Data/prism_data/normals/",var,"/",var,"_normal",raster_list[,1],sep = "")
+  
+  colnames(raster_list) <- c("month","file_name")
+  
+
+
+for(i in 1:nrow(dat_pheno)){
+  
+  if(leap_year(dat_pheno[i,"year"])==TRUE){month_i <- month_leap[month_leap$DOY==dat_pheno[i,"startDayOfYear"], "month"]} 
+  
+  else{month_i <- month_nonleap[month_nonleap$DOY==dat_pheno[i,"startDayOfYear"], "month"]}
+  
+  raster_i <- raster(raster_list$file_name[raster_list$month==month_i])
+    
+  dat_pheno[i,paste(var,"_norm_MOC",sep = "")] <- extract(x = raster_i, y = dat_pheno[i,c("decimalLongitude","decimalLatitude")])
+  
+  
+  
+}  
+}
+
+
+
+
+
+
+
+
+
+
+#
+# COMPUTE ANOMALIES: vars - norms
+#
+
+
+
+
+
+
+
+
+# New variables
+dat_pheno[, paste(c("ppt_wt","tmin_wt","tmean_wt","tmax_wt","ppt_sp","tmin_sp","tmean_sp","tmax_sp", 
+      "ppt_annual","tmin_annual","tmean_annual","tmax_annual",
+      "ppt_MOC","tmin_MOC","tmean_MOC","tmax_MOC"), "_anom",sep = "")] <-
+  
+  
+  # Vars in focal year, season, month
+  dat_pheno[,c("ppt_wt","tmin_wt","tmean_wt","tmax_wt","ppt_sp","tmin_sp","tmean_sp","tmax_sp", 
+            "ppt_annual","tmin_annual","tmean_annual","tmax_annual",
+            "ppt_MOC","tmin_MOC","tmean_MOC","tmax_MOC")] - # minus
+  
+  # Norms
+  dat_pheno[,c("ppt_norm_wt","tmin_norm_wt","tmean_norm_wt","tmax_norm_wt","ppt_norm_sp","tmin_norm_sp","tmean_norm_sp","tmax_norm_sp",
+               "ppt_norm_annual","tmin_norm_annual","tmean_norm_annual","tmax_norm_annual",
+               "ppt_norm_MOC","tmin_norm_MOC","tmean_norm_MOC","tmax_norm_MOC")]
+
+
+
+
+
+#
+# View pheno data with all new variables
+#
+
+View(dat_pheno[,c("year","startDayOfYear","ppt_wt","tmin_wt","tmean_wt","tmax_wt","ppt_sp","tmin_sp","tmean_sp","tmax_sp", 
+                  "ppt_annual","tmin_annual","tmean_annual","tmax_annual",
+                  "ppt_MOC","tmin_MOC","tmean_MOC","tmax_MOC", "ppt_norm_annual","tmin_norm_annual","tmean_norm_annual",
+                  "tmax_norm_annual","ppt_norm_wt","tmin_norm_wt","tmean_norm_wt","tmax_norm_wt",
+                  "ppt_norm_sp","tmin_norm_sp","tmean_norm_sp","tmax_norm_sp",
+                  "ppt_norm_MOC","tmin_norm_MOC","tmean_norm_MOC","tmax_norm_MOC",
+                  paste(c("ppt_wt","tmin_wt","tmean_wt","tmax_wt","ppt_sp","tmin_sp","tmean_sp","tmax_sp", 
+                           "ppt_annual","tmin_annual","tmean_annual","tmax_annual",
+                            "ppt_MOC","tmin_MOC","tmean_MOC","tmax_MOC"), "_anom",sep = ""))])
+
+
+
+#
+# Write csv file with phenological and climate data to use later
+#
+
+write.csv(dat_pheno, "phenoclim data.csv")
 
